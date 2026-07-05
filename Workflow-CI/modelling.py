@@ -1,53 +1,60 @@
-import os
-import json
-import logging
-from sklearn.datasets import load_breast_cancer
+import pandas as pd
+import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, f1_score
 import mlflow
-import mlflow.sklearn
+import dagshub
+import os
+import time
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Otorisasi Headless menggunakan Token (Tidak butuh pop-up browser)
+os.environ["MLFLOW_TRACKING_URI"] = "https://dagshub.com/luckyprdn/Eksperimen_SML_Lucky.git"
+dagshub.init(repo_owner='luckyprdn', repo_name='Eksperimen_SML_Lucky', mlflow=True)
+mlflow.set_tracking_uri("https://dagshub.com/luckyprdn/Eksperimen_SML_Lucky.mlflow")
 
-def run_ci_training():
-    """
-    Fungsi training khusus untuk CI/CD.
-    Fokus utama adalah melatih model dan menyimpan artefak model ke local MLflow 
-    agar GitHub Actions bisa mem-build Docker imagenya.
-    """
-    logging.info("Memulai proses training pipeline CI/CD...")
+def train_and_log_model():
+    print("Membaca dataset...")
+    # Pastikan file CSV tersedia di dalam GitHub repository
+    df = pd.read_csv('../Membangun_model/dataset/data_prepared.csv')
+    X = df.drop(columns=['target'])
+    y = df['target']
     
-    # Set tracking uri ke lokal folder ./mlruns agar tidak butuh autentikasi cloud
-    mlflow.set_tracking_uri("file://" + os.path.abspath("./mlruns"))
-    mlflow.set_experiment("Breast_Cancer_CI_Pipeline")
-
-    # Muat dataset secara mandiri untuk menghindari dependensi folder lintas repo di CI
-    data = load_breast_cancer()
-    X_train, X_test, y_train, y_test = train_test_split(
-        data.data, data.target, test_size=0.2, random_state=42, stratify=data.target
-    )
-
-    with mlflow.start_run() as run:
-        # Training Model
-        rf = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=42)
-        rf.fit(X_train, y_train)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    
+    mlflow.set_experiment("Automated_CI_Pipeline")
+    
+    with mlflow.start_run():
+        start_time = time.time()
         
-        # Evaluasi Singkat
-        y_pred = rf.predict(X_test)
-        acc = accuracy_score(y_test, y_pred)
+        # Hyperparameters
+        params = {
+            "n_estimators": 100,
+            "max_depth": 10,
+            "random_state": 42
+        }
         
-        # Log Metrics & Model
+        mlflow.log_params(params)
+        
+        model = RandomForestClassifier(**params)
+        model.fit(X_train, y_train)
+        
+        end_time = time.time()
+        training_time = end_time - start_time
+        
+        predictions = model.predict(X_test)
+        
+        # Metrik
+        acc = accuracy_score(y_test, predictions)
+        f1 = f1_score(y_test, predictions, average='weighted')
+        
         mlflow.log_metric("accuracy", acc)
-        mlflow.sklearn.log_model(rf, "model")
+        mlflow.log_metric("f1_score", f1)
+        mlflow.log_metric("training_time_seconds", training_time)
         
-        run_id = run.info.run_id
-        logging.info(f"Training CI/CD Selesai. Accuracy: {acc:.4f} | Run ID: {run_id}")
-        
-        # MENYIMPAN RUN ID ke file text agar bisa dibaca oleh GitHub Actions
-        with open("run_id.txt", "w") as f:
-            f.write(run_id)
-        logging.info("Run ID berhasil disimpan ke run_id.txt")
+        # Log model ke MLflow
+        mlflow.sklearn.log_model(model, "model_pipeline")
+        print("Model berhasil di-training dan di-log ke DagsHub via CI/CD!")
 
 if __name__ == "__main__":
-    run_ci_training()
+    train_and_log_model()

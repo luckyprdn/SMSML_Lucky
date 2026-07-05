@@ -1,4 +1,4 @@
-name: Breast_Cancer_Pipeline
+name: SML_Workflow_Lucky
 
 conda_env: conda.yaml
 
