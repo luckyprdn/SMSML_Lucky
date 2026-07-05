@@ -1,7 +1,5 @@
 name: SML_Workflow_Lucky
 
-conda_env: conda.yaml
-
 entry_points:
   main:
     command: "python modelling.py"
