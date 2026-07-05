@@ -2,49 +2,33 @@ name: MLflow CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - main
-      - master
+    branches: [main, master]
   workflow_dispatch:
 
-# Mendefinisikan env lokal agar MLflow tahu di mana mencari artefak run
 env:
-  MLFLOW_TRACKING_URI: file://${{ github.workspace }}/mlruns
-  MLFLOW_ALLOW_FILE_STORE: "true"
+  DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_USER_TOKEN }}
 
 jobs:
   build-and-push:
-    name: Train, Build, and Push Docker Image
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup Conda
-        uses: conda-incubator/setup-miniconda@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          auto-update-conda: true
           python-version: "3.12"
-
-      - name: Install Dependencies
-        run: |
-          pip install mlflow virtualenv
-
-      - name: Run MLflow Project (Training Otomatis)
-        env:
-          DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_USER_TOKEN }}
-        run: |
-          # Perintah ini akan membaca MLproject di dalam folder Workflow-CI
-          mlflow run Workflow-CI
-
-      - name: Build Docker Image (MLflow Build-Docker)
-        run: |
-          # Mengekstrak Run ID secara otomatis langsung dari direktori mlruns (tanpa butuh run_id.txt)
-          RUN_ID=$(ls -td mlruns/0/*/ | head -1 | awk -F/ '{print $3}')
-          echo "Captured Run ID: $RUN_ID"
           
-          # Membangun Docker Image (Ganti "model" menjadi "model_pipeline" sesuai script)
+      - name: Install Dependencies
+        run: pip install mlflow virtualenv dagshub pandas numpy scikit-learn
+
+      - name: Run Training Script (Bypass MLflow CLI)
+        run: |
+          cd Workflow-CI
+          python modelling.py
+
+      - name: Build Docker Image
+        run: |
+          cd Workflow-CI
+          RUN_ID=$(cat run_id.txt)
           mlflow models build-docker -m "runs:/$RUN_ID/model_pipeline" -n ${{ secrets.DOCKER_USERNAME }}/sml-breast-cancer:latest
 
       - name: Login to Docker Hub
@@ -53,6 +37,5 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Push Docker Image to Docker Hub
-        run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/sml-breast-cancer:latest
+      - name: Push to Docker Hub
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/sml-breast-cancer:latest
