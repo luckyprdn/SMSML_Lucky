@@ -20,7 +20,15 @@ jobs:
       - name: Install Dependencies
         run: pip install mlflow virtualenv dagshub pandas numpy scikit-learn
 
-      - name: Run Training Script (Bypass MLflow CLI)
+      - name: Generate Dataset (Bypass File Not Found)
+        run: |
+          cd Eksperimen_SML_Lucky
+          python automate.py
+          cd ..
+          mkdir -p Membangun_model/dataset
+          cp Eksperimen_SML_Lucky/dataset/* Membangun_model/dataset/
+
+      - name: Run Training Script
         run: |
           cd Workflow-CI
           python modelling.py
