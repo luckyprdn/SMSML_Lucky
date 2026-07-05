@@ -14,7 +14,18 @@ mlflow.set_tracking_uri("https://dagshub.com/luckyprdn/Eksperimen_SML_Lucky.mlfl
 
 def train_and_log_model():
     print("Membaca dataset...")
-    df = pd.read_csv('../Membangun_model/dataset/data_prepared.csv')
+    
+    # BLOK ANTI-GAGAL: Coba baca CSV, kalau nggak ada, langsung load dari library
+    try:
+        df = pd.read_csv('../Membangun_model/dataset/data_prepared.csv')
+        print("Berhasil membaca CSV lokal.")
+    except FileNotFoundError:
+        print("CSV tidak ditemukan di GitHub! Mengambil dataset otomatis dari sklearn...")
+        from sklearn.datasets import load_breast_cancer
+        data = load_breast_cancer()
+        df = pd.DataFrame(data.data, columns=data.feature_names)
+        df['target'] = data.target
+    
     X = df.drop(columns=['target'])
     y = df['target']
     
@@ -40,7 +51,7 @@ def train_and_log_model():
         mlflow.sklearn.log_model(model, "model_pipeline")
         print("Model berhasil di-training dan di-log!")
 
-        # SIMPAN RUN ID BUAT DIBACA SAMA GITHUB ACTIONS
+        # SIMPAN RUN ID BUAT DIBACA SAMA GITHUB ACTIONS DOCKER
         with open("run_id.txt", "w") as f:
             f.write(run.info.run_id)
 
