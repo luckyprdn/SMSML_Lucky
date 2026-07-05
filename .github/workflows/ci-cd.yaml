@@ -21,7 +21,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install Dependencies
-        run: pip install mlflow virtualenv dagshub pandas numpy scikit-learn
+        run: pip install "mlflow<3" virtualenv dagshub pandas numpy scikit-learn
 
       - name: Generate Dataset (Bypass File Not Found)
         run: |
