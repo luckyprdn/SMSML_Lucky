@@ -7,6 +7,10 @@ on:
 
 env:
   DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_USER_TOKEN }}
+  # 3 Baris sakti ini ngasih tau MLflow CLI untuk sedot model dari DagsHub
+  MLFLOW_TRACKING_URI: https://dagshub.com/luckyprdn/Eksperimen_SML_Lucky.mlflow
+  MLFLOW_TRACKING_USERNAME: luckyprdn
+  MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_USER_TOKEN }}
 
 jobs:
   build-and-push:
