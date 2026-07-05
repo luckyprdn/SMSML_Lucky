@@ -6,7 +6,7 @@ on:
       - main
       - master
     paths-ignore:
-      - 'dataset/**' # Menghindari infinite loop jika dataset ter-update
+      - '**/dataset/**' # Menghindari infinite loop jika dataset ter-update
   workflow_dispatch: # Mengizinkan eksekusi manual dari tab Actions
 
 jobs:
@@ -34,13 +34,21 @@ jobs:
 
       - name: Run Preprocessing Script
         run: |
-          # Pastikan file automate.py berada di root repository ini
+          # 1. Masuk ke folder eksperimen dan jalankan script
+          cd Eksperimen_SML_Lucky
           python automate.py
+          
+          # 2. Kembali ke folder utama, lalu copy dataset ke folder Membangun_model
+          # Ini wajib agar job CI/CD selanjutnya bisa membaca file data_prepared.csv
+          cd ..
+          mkdir -p Membangun_model/dataset
+          cp -r Eksperimen_SML_Lucky/dataset/* Membangun_model/dataset/
 
       - name: Commit and Push Changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Auto-generate preprocessed dataset [skip ci]"
-          file_pattern: "dataset/*.csv"
+          # Memasukkan folder dataset di kedua lokasi agar tersimpan di GitHub
+          file_pattern: "Eksperimen_SML_Lucky/dataset/*.csv Membangun_model/dataset/*.csv"
           commit_user_name: "github-actions[bot]"
           commit_user_email: "github-actions[bot]@users.noreply.github.com"

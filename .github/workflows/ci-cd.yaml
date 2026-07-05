@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - master
-  workflow_dispatch: # Mengizinkan eksekusi manual
+  workflow_dispatch:
 
 # Mendefinisikan env lokal agar MLflow tahu di mana mencari artefak run
 env:
@@ -26,23 +26,25 @@ jobs:
           auto-update-conda: true
           python-version: "3.12"
 
-      - name: Install MLflow
+      - name: Install Dependencies
         run: |
-          pip install mlflow==2.19.0 virtualenv
+          pip install mlflow virtualenv
 
       - name: Run MLflow Project (Training Otomatis)
+        env:
+          DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_USER_TOKEN }}
         run: |
-          # Perintah ini akan membaca MLproject dan conda.yaml
-          mlflow run .
+          # Perintah ini akan membaca MLproject di dalam folder Workflow-CI
+          mlflow run Workflow-CI
 
       - name: Build Docker Image (MLflow Build-Docker)
         run: |
-          # Membaca Run ID yang di-generate oleh modelling.py
-          RUN_ID=$(cat run_id.txt)
+          # Mengekstrak Run ID secara otomatis langsung dari direktori mlruns (tanpa butuh run_id.txt)
+          RUN_ID=$(ls -td mlruns/0/*/ | head -1 | awk -F/ '{print $3}')
           echo "Captured Run ID: $RUN_ID"
           
-          # Membangun Docker Image langsung dari artefak model MLflow
-          mlflow models build-docker -m "runs:/$RUN_ID/model" -n ${{ secrets.DOCKER_USERNAME }}/sml-breast-cancer:latest
+          # Membangun Docker Image (Ganti "model" menjadi "model_pipeline" sesuai script)
+          mlflow models build-docker -m "runs:/$RUN_ID/model_pipeline" -n ${{ secrets.DOCKER_USERNAME }}/sml-breast-cancer:latest
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
