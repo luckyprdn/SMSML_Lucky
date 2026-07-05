@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 5s # Diatur ke 5 detik agar reviewer dapat dengan cepat melihat perubahan data
+  evaluation_interval: 5s # Interval evaluasi rules
+
+scrape_configs:
+  # Job 1: Memonitor Prometheus itu sendiri
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Job 2: Memonitor aplikasi Machine Learning (FastAPI)
+  - job_name: 'fastapi_inference'
+    metrics_path: '/metrics'
+    static_configs:
+      # Menggunakan host.docker.internal agar container Prometheus dapat membaca localhost Windows/Mac.
+      # localhost:8000 disertakan sebagai fallback jika dijalankan native di Linux.
+      - targets: ['host.docker.internal:8000', 'localhost:8000']

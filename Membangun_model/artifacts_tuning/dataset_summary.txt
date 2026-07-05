@@ -1,0 +1,2 @@
+Training set size: 455 rows, 30 columns
+Testing set size: 114 rows

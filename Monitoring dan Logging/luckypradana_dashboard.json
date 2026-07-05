@@ -1,0 +1,22 @@
+{
+  "dashboard": {
+    "title": "luckypradana",
+    "panels": [
+      {
+        "title": "CPU Usage",
+        "type": "gauge",
+        "targets": [{ "expr": "system_cpu_usage_percent" }]
+      },
+      {
+        "title": "Request Count",
+        "type": "graph",
+        "targets": [{ "expr": "rate(api_request_total[1m])" }]
+      },
+      {
+        "title": "Prediction Error Rate",
+        "type": "graph",
+        "targets": [{ "expr": "rate(model_prediction_error_total[1m])" }]
+      }
+    ]
+  }
+}

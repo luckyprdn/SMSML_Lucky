@@ -1,0 +1,46 @@
+name: Automated Data Preprocessing
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths-ignore:
+      - 'dataset/**' # Menghindari infinite loop jika dataset ter-update
+  workflow_dispatch: # Mengizinkan eksekusi manual dari tab Actions
+
+jobs:
+  preprocess-and-commit:
+    name: Run automate.py and Commit Dataset
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Izin wajib agar bot bisa melakukan commit & push
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python 3.12.7
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.7'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas scikit-learn
+
+      - name: Run Preprocessing Script
+        run: |
+          # Pastikan file automate.py berada di root repository ini
+          python automate.py
+
+      - name: Commit and Push Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Auto-generate preprocessed dataset [skip ci]"
+          file_pattern: "dataset/*.csv"
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "github-actions[bot]@users.noreply.github.com"
