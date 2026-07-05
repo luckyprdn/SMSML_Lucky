@@ -10,6 +10,7 @@ on:
 # Mendefinisikan env lokal agar MLflow tahu di mana mencari artefak run
 env:
   MLFLOW_TRACKING_URI: file://${{ github.workspace }}/mlruns
+  MLFLOW_ALLOW_FILE_STORE: "true"
 
 jobs:
   build-and-push:
